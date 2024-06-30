@@ -20,7 +20,8 @@ PATH_DIM = '/root/airflow/dimensions.json'
 
 # Truncate table before loading
 def truncate_dimensions(**kwargs):
-    with Client(host=CH_HOST, user=CH_USER, password=CH_PASSWORD, database=CH_DATABASE) as client:
+    with Client(host=CH_HOST, user=CH_USER, password=CH_PASSWORD,
+                database=CH_DATABASE) as client:
         client.execute(f'TRUNCATE TABLE {CH_TABLE}')
         client.execute(f'TRUNCATE TABLE {CH_D_TABLE}')
 
@@ -45,7 +46,8 @@ def load_dimensions_to_clickhouse(**kwargs):
 
     records = [(dim['Code'], dim['Title']) for dim in dimensions]
 
-    with Client(host=CH_HOST, user=CH_USER, password=CH_PASSWORD, database=CH_DATABASE) as client:
+    with Client(host=CH_HOST, user=CH_USER, password=CH_PASSWORD,
+                database=CH_DATABASE) as client:
         client.execute(f'INSERT INTO {CH_D_TABLE} (Code, Title) VALUES', records)
 
 
@@ -54,7 +56,8 @@ def fetch_and_produce_dimension_values(**kwargs):
     with open(PATH_DIM, 'r') as f:
         dimensions = json.load(f)
 
-    producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS, value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+    producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+                             value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
     for dimension in dimensions:
         code = dimension['Code']
@@ -88,11 +91,8 @@ def fetch_and_produce_dimension_values(**kwargs):
 
 # Consume data from Kafka and load into ClickHouse
 def consume_and_load_dimension_values(**kwargs):
-    timeout = 30
-    last_msg_time = time.time()
-
     processed_keys = set()
-    
+
     consumer = KafkaConsumer(
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
         value_deserializer=lambda x: json.loads(x.decode('utf-8')),
@@ -107,7 +107,8 @@ def consume_and_load_dimension_values(**kwargs):
     end_offsets = consumer.end_offsets([partition])
     end_offset = end_offsets[partition]
 
-    with Client(host=CH_HOST, user=CH_USER, password=CH_PASSWORD, database=CH_DATABASE) as client:
+    with Client(host=CH_HOST, user=CH_USER, password=CH_PASSWORD,
+                database=CH_DATABASE) as client:
         for message in consumer:
             key = message.key.decode('utf-8')
             if key in processed_keys:
@@ -127,5 +128,5 @@ def consume_and_load_dimension_values(**kwargs):
             if message.offset + 1 >= end_offset:
                 print("No messages left. Finishing.")
                 break
-            
+ 
     consumer.close()

@@ -1,8 +1,12 @@
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from datetime import datetime, timedelta
-from load_dim import truncate_dimensions, fetch_dimensions, fetch_and_produce_dimension_values, consume_and_load_dimension_values, load_dimensions_to_clickhouse
-from load_indicator import truncate_indicators, load_indicators_to_clickhouse, fetch_indicators, fetch_and_load_indicator_values
+from datetime import datetime
+from load_dim import (truncate_dimensions, fetch_dimensions,
+                      fetch_and_produce_dimension_values,
+                      consume_and_load_dimension_values, 
+                      load_dimensions_to_clickhouse)
+from load_indicator import (truncate_indicators, load_indicators_to_clickhouse,
+                            fetch_indicators, fetch_and_load_indicator_values)
 
 
 args = {
@@ -84,8 +88,6 @@ with DAG(
         dag=dag,
     )
 
-
-
     (truncate_table_task >> fetch_dimensions_task >> load_dimensions_to_clickhouse >> fetch_and_produce_dimension_values >> consume_and_load_dimension_values)
-    
+
     (truncate_indicator_table_task >> fetch_indicators_task >> load_indicators_to_clickhouse >> fetch_and_load_indicator_values)
